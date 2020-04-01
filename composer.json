@@ -1,0 +1,7 @@
+{
+    "name": "kevindees/ezra-core",
+    "description": "Ezra platform core",
+    "type": "library",
+    "license": "MIT",
+    "require": {}
+}
