@@ -1,5 +1,5 @@
 <?php
-namespace Ezra\Framework;
+namespace Ezra\Framework\Core;
 
 class HookItem
 {

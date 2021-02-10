@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Ezra\Framework;
+namespace Ezra\Framework\Core;
 
 class Platform
 {
