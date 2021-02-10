@@ -5,33 +5,37 @@ use Ezra\Framework\Utility\Hasher;
 
 class Hook
 {
-    protected array $actions = [];
-    protected array $filters = [];
+    protected array $action = [];
+    protected array $filter = [];
 
     /**
-     * @param string $type
-     * @param string $hook
+     * @param string $hook Hook name.
      */
-    public function has(string $type, string $hook) : bool
+    public function hasFilter(string $hook) : bool
     {
-        if($type !== 'action') {
-            $type = 'filter';
-        }
-
-        return isset($this->{$type}[$hook]);
+        return isset($this->filter[$hook]);
     }
 
     /**
-     * @param string $hook name
-     * @param mixed ...$args
+     * @param string $hook Hook name.
      */
-    public function action(string $hook, mixed ...$args)
+    public function hasAction(string $hook) : bool
     {
-        if($this->has('action', $hook)) {
-            foreach ($this->actions[$hook] as $priority => $stack) {
+        return isset($this->action[$hook]);
+    }
+
+    /**
+     * @param string $hook Hook name.
+     * @param mixed ...$args Argument(s) passed to callable.
+     */
+    public function callAction(string $hook, mixed ...$args) : bool
+    {
+        if($this->hasAction($hook)) {
+            foreach ($this->action[$hook] as $priority => $stack) {
                 /** @var HookItem[] $stack */
                 foreach ($stack as $item) {
-                    $item->callable->call(...array_slice($args, 0, $item->numArgs < 0 ? null : $item->numArgs ));
+                    $call = $item->callable;
+                    $call(...array_slice($args, 0, $item->numArgs < 0 ? null : $item->numArgs ));
                 }
             }
 
@@ -42,17 +46,18 @@ class Hook
     }
 
     /**
-     * @param string $hook
-     * @param mixed $value
-     * @param mixed ...$args
+     * @param string $hook Hook name.
+     * @param mixed $value The filtered return value.
+     * @param mixed ...$args Argument(s) passed to callable.
      */
-    public function filter(string $hook, mixed $value, mixed ...$args) : mixed
+    public function callFilter(string $hook, mixed $value, mixed ...$args) : mixed
     {
-        if($this->has('filter', $hook)) {
-            foreach ($this->filters[$hook] as $priority => $stack) {
+        if($this->hasFilter($hook)) {
+            foreach ($this->filter[$hook] as $priority => $stack) {
                 /** @var HookItem[] $stack */
                 foreach ($stack as $item) {
-                    $value = $item->callable->call($value, ...array_slice($args, 0, $item->numArgs < 0 ? null : $item->numArgs ));
+                    $call = $item->callable;
+                    $value = $call($value, ...array_slice($args, 0, $item->numArgs < 0 ? null : $item->numArgs ));
                 }
             }
         }
@@ -61,8 +66,8 @@ class Hook
     }
 
     /**
-     * @param string $property actions or filters.
-     * @param string $hook hook name.
+     * @param string $type Value 'action' or 'filter'.
+     * @param string $hook Hook name.
      * @param callable $callable The callback to be run when the filter is applied.
      * @param int $priority The order in which the functions associated with a particular action
      *                      are executed. Lower numbers correspond with earlier execution,
@@ -70,22 +75,82 @@ class Hook
      *                      in which they were added to the action.
      * @param int|null $numArgs The number of args the callback accepts.
      */
-    public function add(string $property, string $hook, callable $callable, int $priority = 10, ?int $numArgs = null) : static
+    public function add(string $type, string $hook, callable $callable, int $priority = 10, ?int $numArgs = null) : static
     {
-        if($property !== 'actions') {
-            $property = 'filters';
+        $hash = Hasher::hashCallable($callable);
+
+        $this->{$type}[$hook][$priority][] = new HookItem(hash: $hash, numArgs: $numArgs, callable: $callable);
+
+        if ( ! isset($this->{$type}[$hook][$priority]) && count( $this->{$type}[$hook] ) > 1 ) {
+            ksort( $this->{$type}[$hook], SORT_NUMERIC );
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param string $hook Hook name.
+     * @param callable $callable The callback to be run when the filter is applied.
+     * @param int $priority The priority.
+     * @param int|null $numArgs The number of args the callback accepts.
+     */
+    public function addAction(string $hook, callable $callable, int $priority = 10, ?int $numArgs = null) : static
+    {
+        return $this->add('action', ...func_get_args());
+    }
+
+    /**
+     * @param string $hook Hook name.
+     * @param callable $callable The callback to be run when the filter is applied.
+     * @param int $priority The priority.
+     * @param int|null $numArgs The number of args the callback accepts.
+     */
+    public function addFilter(string $hook, callable $callable, int $priority = 10, ?int $numArgs = null) : static
+    {
+        return $this->add('filter', ...func_get_args());
+    }
+
+    /**
+     * @param string $type Value 'action' or 'filter'.
+     * @param string $hook Hook name.
+     * @param callable $callable The callback to be removed.
+     * @param int $priority The priority to seek.
+     */
+    public function remove(string $type, string $hook, callable $callable, int $priority = 10) : bool
+    {
+        if ( ! isset($this->{$type}[$hook][$priority]) ) {
+            return false;
         }
 
         $hash = Hasher::hashCallable($callable);
 
-        $priority_exists = isset( $this->{$type}[$hook][$priority] );
-
-        $this->{$type}[$hook][$priority][] = new HookItem(hash: $hash, numArgs: $numArgs, callable: $callable);
-
-        if ( ! $priority_exists && count( $this->{$type} ) > 1 ) {
-            ksort( $this->{$property}[$hook], SORT_NUMERIC );
+        /** @var HookItem $item */
+        foreach ($this->{$type}[$hook][$priority] as $index => $item) {
+            if($item->hash == $hash) {
+                unset($this->{$type}[$hook][$priority][$index]);
+            }
         }
 
-        return $this;
+        return true;
+    }
+
+    /**
+     * @param string $hook Hook name.
+     * @param callable $callable The callback to be removed.
+     * @param int $priority The priority to seek.
+     */
+    public function removeAction(string $hook, callable $callable, int $priority = 10) : bool
+    {
+        return $this->remove('action', ...func_get_args());
+    }
+
+    /**
+     * @param string $hook Hook name.
+     * @param callable $callable The callback to be removed.
+     * @param int $priority The priority to seek.
+     */
+    public function removeFilter(string $hook, callable $callable, int $priority = 10) : bool
+    {
+        return $this->remove('filter', ...func_get_args());
     }
 }
