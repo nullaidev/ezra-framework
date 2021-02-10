@@ -29,8 +29,9 @@ class Hook
     {
         if($this->has('action', $hook)) {
             foreach ($this->actions[$hook] as $priority => $stack) {
+                /** @var HookItem[] $stack */
                 foreach ($stack as $item) {
-                    $item['callable'](...array_slice($args, 0, $item['num_args'] < 0 ? null : $item['num_args'] ));
+                    $item->callable->call(...array_slice($args, 0, $item->numArgs < 0 ? null : $item->numArgs ));
                 }
             }
 
@@ -49,8 +50,9 @@ class Hook
     {
         if($this->has('filter', $hook)) {
             foreach ($this->filters[$hook] as $priority => $stack) {
+                /** @var HookItem[] $stack */
                 foreach ($stack as $item) {
-                    $value = $item['callable']($value, ...array_slice($args, 0, $item['num_args'] < 0 ? null : $item['num_args'] ));
+                    $value = $item->callable->call($value, ...array_slice($args, 0, $item->numArgs < 0 ? null : $item->numArgs ));
                 }
             }
         }
