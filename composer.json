@@ -1,7 +1,22 @@
 {
-    "name": "kevindees/ezra-core",
-    "description": "Ezra platform core",
+    "name": "nullaidev/ezra-framework",
+    "description": "Ezra Framework",
     "type": "library",
     "license": "MIT",
-    "require": {}
+    "require": {
+        "php": ">=8.0",
+        "ext-mbstring": "*",
+        "ext-json": "*",
+        "ext-gd": "*",
+        "ext-pdo": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Ezra\\Framework": "src/"
+        },
+        "files": ["src/functions.php"]
+    }
 }
