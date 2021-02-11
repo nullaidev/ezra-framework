@@ -4,6 +4,8 @@ namespace Ezra\Framework\Core;
 class ReflectionResolver
 {
     /**
+     * Resolve Class or Callable
+     *
      * @param string|callable $option Class name or callable to resolve by reflection resolver.
      * @param array|null $args Arguments used by the classes constructor or callable.
      *
