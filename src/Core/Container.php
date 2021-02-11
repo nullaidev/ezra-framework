@@ -1,9 +1,14 @@
 <?php
 namespace Ezra\Framework\Core;
 
+/**
+ * Class Container
+ *
+ * Inversion of control container.
+ */
 class Container
 {
-    protected static array $list = [];
+    protected array $list = [];
 
     /**
      * Resolve Class
@@ -13,17 +18,17 @@ class Container
      *
      * @param string $id Class name or alias to resolve instance from container.
      */
-    public static function resolve(string $id) : ?object
+    public function resolve(string $id) : ?object
     {
-        if(!empty(self::$list[$id]))
+        if(isset($this->list[$id]))
         {
-            $registered =& self::$list[$id];
-            $instance = $registered->singleton_instance ?? call_user_func($registered->callback);
+            $registered =& $this->list[$id];
+            $instance = $registered->singletonInstance ?? call_user_func($registered->callback);
 
-            if(1 === $registered->singleton_mode)
+            if(1 === $registered->singletonMode)
             {
-                $registered->singleton_mode += 2;
-                $registered->singleton_instance = $instance;
+                $registered->singletonMode += 2;
+                $registered->singletonInstance = $instance;
             }
 
             return $instance;
@@ -42,25 +47,25 @@ class Container
      *
      * @throws \Exception
      */
-    public static function register(string $className, callable $callback, bool $singleton = false, ?string $alias = null) : bool
+    public function register(string $className, callable $callback, bool $singleton = false, ?string $alias = null) : bool
     {
         if(!class_exists($className)) {
             throw new \Exception('Failed to register class to container because the class does not exist.');
         }
 
-        if(!empty(self::$list[$className])) {
+        if(!empty($this->list[$className])) {
             return false;
         }
 
         $obj = new \stdClass();
         $obj->callback = $callback;
-        $obj->singleton_mode = $singleton ? 1 : 0;
-        $obj->singleton_instance = null;
+        $obj->singletonMode = $singleton ? 1 : 0;
+        $obj->singletonInstance = null;
 
-        self::$list[$className] = $obj;
+        $this->list[$className] = $obj;
 
         if($alias) {
-            self::$list['@'.$alias] = $obj;
+            $this->list['@'.$alias] = $obj;
         }
 
         return true;

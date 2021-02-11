@@ -3,21 +3,16 @@ namespace Ezra\Framework\Core;
 
 class ReflectionResolver
 {
-    /**
-     * Resolve Class or Callable
-     *
-     * @param string|callable $option Class name or callable to resolve by reflection resolver.
-     * @param array|null $args Arguments used by the classes constructor or callable.
-     *
-     * @throws \ReflectionException
-     */
-    public static function resolve(string|callable $option, ?array $args = null) : mixed
-    {
-        if(is_string($option)) {
-            return (new static)->resolveClass($option, $args);
-        }
+    protected ?Container $container = null;
 
-        return (new static)->resolveCallable($option, $args);
+    /**
+     * Set Container
+     *
+     * @param Container $container Platform's container.
+     */
+    public function setContainer(Container $container)
+    {
+        $this->container = $container;
     }
 
     /**
@@ -30,7 +25,7 @@ class ReflectionResolver
      */
     public function resolveClass(string $class, ?array $args = null) : object
     {
-        if($containerInstance = Container::resolve($class)) {
+        if($containerInstance = $this->container?->resolve($class)) {
             return $containerInstance;
         }
 
@@ -74,7 +69,7 @@ class ReflectionResolver
      *
      * @throws \ReflectionException
      */
-    public function getDependencyArgs(array $parameters, ?array $args = null) : array
+    protected function getDependencyArgs(array $parameters, ?array $args = null) : array
     {
         $dependencies = [];
         $i = 0;
@@ -112,7 +107,7 @@ class ReflectionResolver
      *
      * @throws \ReflectionException
      */
-    public function resolveNonClass(\ReflectionParameter $parameter) : mixed
+    protected function resolveNonClass(\ReflectionParameter $parameter) : mixed
     {
         if($parameter->isDefaultValueAvailable()) {
             return $parameter->getDefaultValue();
