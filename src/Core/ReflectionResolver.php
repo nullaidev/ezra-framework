@@ -7,7 +7,6 @@ class ReflectionResolver
      * @param string|callable $option Class name or callable to resolve by reflection resolver.
      * @param array|null $args Arguments used by the classes constructor or callable.
      *
-     * @return mixed
      * @throws \ReflectionException
      */
     public static function resolve(string|callable $option, ?array $args = null) : mixed
@@ -68,8 +67,8 @@ class ReflectionResolver
     /**
      * Get Dependencies
      *
-     * @param array $parameters
-     * @param null|array $args
+     * @param \ReflectionParameter[] $parameters Reflection parameters.
+     * @param null|array $args Arguments used by inject as a dependency.
      *
      * @throws \ReflectionException
      */
@@ -103,11 +102,11 @@ class ReflectionResolver
     }
 
     /**
-     * Resolve none class
+     * Resolve None Class
      *
-     * Inject default value
+     * Inject default value.
      *
-     * @param \ReflectionParameter $parameter
+     * @param \ReflectionParameter $parameter Reflection parameter.
      *
      * @throws \ReflectionException
      */
